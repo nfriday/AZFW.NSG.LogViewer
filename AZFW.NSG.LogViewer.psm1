@@ -471,15 +471,15 @@ Function New-AZFWLogReport {
 
         .EXAMPLE
 
-        New-NSGLogReport -StorageAccountName constosofwlogs -Last 2
+        New-AZFWLogReport -StorageAccountName constosofwlogs -Last 2
 
         .EXAMPLE
 
-         New-NSGLogReport -StorageAccountName constosofwlogs
+         New-AZFWLogReport -StorageAccountName constosofwlogs
 
         .EXAMPLE
 
-         New-NSGLogReport -StorageAccountName constosofwlogs -Console
+         New-AZFWLogReport -StorageAccountName constosofwlogs -Console
 
     #>
 
