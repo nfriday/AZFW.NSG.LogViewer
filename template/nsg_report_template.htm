@@ -1,0 +1,77 @@
+<html>
+    <head>
+
+        <script src="https://unpkg.com/ag-grid-community@21.0.1/dist/ag-grid-community.min.js"></script>
+    
+        <style>
+
+            .ag-theme-balham .class-allow {
+                background-color: #82CA9D;
+            }
+            .ag-theme-balham .class-deny {
+                background-color: #F7977A;
+            }
+
+            .button-active {
+                background-color: #4CAF50;
+                color: black;
+                border: 2px solid #4CAF50;
+                font-size: 16px;
+                padding: 15px 32px;
+            }
+
+        </style>
+
+    </head>
+
+    <body>
+
+        <div style="padding: 5px">
+            <button class="button-active" id="applog_button">NSG Log</button>       
+        </div>
+
+        <div id="data" class="ag-theme-balham" style="height: 90%;"></div>	
+
+        <script>
+        
+            var data = [ {{ nsg_data }} ];
+
+            var columns = [
+                {headerName: "Time", field: "time", width: 150 },
+                {headerName: "Protocol", field: "protocol", width: 110},
+                {headerName: "Source IP", field: "source_ip", width: 150},
+                {headerName: "Source Port", field: "source_port", width: 110, filter: 'agNumberColumnFilter' },
+                {headerName: "Dest IP", field: "destination_ip", width: 150},
+                {headerName: "Dest Port", field: "destination_port", width: 110, filter: 'agNumberColumnFilter' },
+                {headerName: "Direction", field: "direction", width: 110},
+                {headerName: "Allowed", field: "allowed", width: 110 },
+                {headerName: "Rule", field: "rule", width: 350}
+            ];
+
+            var grid = {
+                    defaultColDef: {
+                        filter: "agTextColumnFilter",
+                        filterParams: {
+                            clearButton: true,
+                            debounceMs: 700
+                        },
+                        sortable: true
+                    },
+                    columnDefs: columns,
+                    rowData: data,
+                    rowClassRules: {
+                        'class-allow': function(params) {return params.data.allowed == "Allow"},
+                        'class-deny': function(params) {return params.data.allowed == "Deny"}
+                    }
+            };			
+
+            document.addEventListener("DOMContentLoaded", function() {
+                var grid_div = document.querySelector('#data');
+                new agGrid.Grid(grid_div, grid);
+            });
+
+        </script>
+
+    </body>
+
+</html>

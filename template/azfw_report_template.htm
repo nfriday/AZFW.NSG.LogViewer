@@ -1,0 +1,143 @@
+<html>
+
+    <head>
+        <script src="https://unpkg.com/ag-grid-community@21.0.1/dist/ag-grid-community.min.js"></script>
+        <style>
+
+            .ag-theme-balham .class-allow {
+                background-color: #82CA9D;
+            }
+            .ag-theme-balham .class-deny {
+                background-color: #F7977A;
+            }
+
+            .ag-theme-balham .class-alert {
+                background-color: #FFDD77;
+            }
+
+            .button-active {
+                background-color: #4CAF50;
+                color: black;
+                border: 2px solid #4CAF50;
+                font-size: 16px;
+                padding: 15px 32px;
+            }
+
+            .button-inactive {
+                background-color: white;
+                color: black;
+                border: 2px solid #4CAF50;
+                font-size: 16px;
+                padding: 15px 32px;
+            }
+
+        </style>
+    </head>
+    
+    <body>
+
+        <div style="padding: 5px">
+            <button class="button-active" id="applog_button">Application Log</button>
+            <button class="button-inactive" id="netlog_button">Network Log</button>                    
+        </div>
+        
+        <div id="applog_data" class="ag-theme-balham" style="height: 90%;"></div>
+        <div id="netlog_data" class="ag-theme-balham" style="height: 90%; display: none"></div>	
+
+        <script>
+
+            document.getElementById('netlog_button').addEventListener('click', showNetLog);
+            document.getElementById('applog_button').addEventListener('click', showAppLog);
+
+            function showNetLog() {
+                document.getElementById('netlog_data').style.display = 'block';
+                document.getElementById('netlog_button').classList.replace('button-inactive','button-active');
+
+                document.getElementById('applog_data').style.display = 'none';
+                document.getElementById('applog_button').classList.replace('button-active','button-inactive');
+            }
+
+            function showAppLog() {
+                document.getElementById('netlog_data').style.display = 'none';
+                document.getElementById('netlog_button').classList.replace('button-active','button-inactive');
+
+                document.getElementById('applog_data').style.display = 'block';
+                document.getElementById('applog_button').classList.replace('button-inactive','button-active');
+            }
+
+            var applog_data = [ {{ applog_data }} ]
+
+            var netlog_data = [ {{ netlog_data }} ]
+
+            var applog_columns = [
+                {headerName: "Time", field: "time", width: 150 },
+                {headerName: "Protocol", field: "protocol", width: 100},
+                {headerName: "Source IP", field: "source_ip", width: 150},
+                {headerName: "Source Port", field: "source_port", width: 110, filter: 'agNumberColumnFilter' },
+                {headerName: "Dest", field: "destination_ip", width: 350},
+                {headerName: "Dest Port", field: "destination_port", width: 110, filter: 'agNumberColumnFilter' },
+                {headerName: "Action", field: "action", width: 110},
+                {headerName: "Rule Collection", field: "rule_collection", width: 150 },
+                {headerName: "Rule", field: "rule", width: 200}
+            ];
+                
+            var applog_grid = {
+                    defaultColDef: {
+                        filter: "agTextColumnFilter",
+                        filterParams: {
+                            clearButton: true,
+                            debounceMs: 700
+                        },
+                        sortable: true
+                    },
+                    columnDefs: applog_columns,
+                    rowData: applog_data,
+                    rowClassRules: {
+                        'class-allow': function(params) {return params.data.action == "Allow"},
+                        'class-deny': function(params) {return params.data.action == "Deny"},
+                    }
+            };			
+                
+            document.addEventListener("DOMContentLoaded", function() {
+                var applog_grid_div = document.querySelector('#applog_data');
+                new agGrid.Grid(applog_grid_div, applog_grid);
+            });
+
+            var netlog_columns = [
+                {headerName: "Time", field: "time", width: 150 },
+                {headerName: "Protocol", field: "protocol", width: 100},
+                {headerName: "Source IP", field: "source_ip", width: 150},
+                {headerName: "Source Port", field: "source_port", width: 110, filter: 'agNumberColumnFilter' },
+                {headerName: "Dest IP", field: "destination_ip", width: 150},
+                {headerName: "Dest Port", field: "destination_port", width: 110, filter: 'agNumberColumnFilter' },
+                {headerName: "Action", field: "action", width: 250}
+            ];
+                
+            var netlog_grid = {
+                    defaultColDef: {
+                        filter: "agTextColumnFilter",
+                        filterParams: {
+                            clearButton: true,
+                            debounceMs: 700
+                        },
+                        sortable: true
+                    },
+                    columnDefs: netlog_columns,
+                    rowData: netlog_data,
+                    rowClassRules: {
+                        'class-allow': function(params) {return params.data.action == "Allow"},
+                        'class-deny': function(params) {return params.data.action == "Deny"},
+                        'class-alert': function(params) {return /^Alert/.test(params.data.action)}
+                    }
+            };			
+                
+            document.addEventListener("DOMContentLoaded", function() {
+                var netlog_grid_div = document.querySelector('#netlog_data');
+                new agGrid.Grid(netlog_grid_div, netlog_grid);
+            });
+                    
+        </script>
+        
+    </body>
+    
+</html>
