@@ -4,6 +4,12 @@
 
 A PowerShell module for quickly generating HTML reports from Azure Firewall or NSG logs.
 
+## Screenshots
+
+![New-AZFWLogReport](/screenshots/azfwlogreport.png "Azure Firewall log report")
+
+![New-NSGLogReport](/screenshots/nsglogreport.png "NSG log report")
+
 ## Install
 
 Please ensure you're running PowerShell version 5.1 or later.
