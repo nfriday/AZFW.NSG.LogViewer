@@ -37,7 +37,7 @@
             var data = [ {{ nsg_data }} ];
 
             var columns = [
-                {headerName: "Time", field: "time", width: 150 },
+                {headerName: "Time", field: "time", width: 150, sortingOrder: [ 'desc', 'asc' ] },
                 {headerName: "Protocol", field: "protocol", width: 110},
                 {headerName: "Source IP", field: "source_ip", width: 150},
                 {headerName: "Source Port", field: "source_port", width: 110, filter: 'agNumberColumnFilter' },
