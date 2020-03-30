@@ -70,7 +70,7 @@
             var netlog_data = [ {{ netlog_data }} ]
 
             var applog_columns = [
-                {headerName: "Time", field: "time", width: 150 },
+                {headerName: "Time", field: "time", width: 150, sortingOrder: [ 'desc', 'asc' ] },
                 {headerName: "Protocol", field: "protocol", width: 100},
                 {headerName: "Source IP", field: "source_ip", width: 150},
                 {headerName: "Source Port", field: "source_port", width: 110, filter: 'agNumberColumnFilter' },
@@ -104,7 +104,7 @@
             });
 
             var netlog_columns = [
-                {headerName: "Time", field: "time", width: 150 },
+                {headerName: "Time", field: "time", width: 150, sortingOrder: [ 'desc', 'asc' ] },
                 {headerName: "Protocol", field: "protocol", width: 100},
                 {headerName: "Source IP", field: "source_ip", width: 150},
                 {headerName: "Source Port", field: "source_port", width: 110, filter: 'agNumberColumnFilter' },

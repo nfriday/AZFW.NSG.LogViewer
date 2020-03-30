@@ -1,4 +1,20 @@
-﻿Function Get-StorageAccountBlobsAPI {
+﻿class LogBlob : System.IComparable {
+
+    [string]$Name
+
+    [string]$LastModified
+
+    LogBlob([string]$Name,[string]$LastModified) {
+        $this.Name = $Name; $this.LastModified = $LastModified
+    }
+
+    [int]CompareTo($that) {
+        return ($that.Name.CompareTo($this.Name))
+    }
+
+}
+
+Function Get-StorageAccountBlobsAPI {
 
     param(
         [string]$StorageAccountName,
@@ -6,38 +22,53 @@
         [string]$StorageKey
     )
 
-    $request_uri = New-Object System.Uri ('https://{0}.blob.core.windows.net/{1}?restype=container&comp=list' -f $StorageAccountName, $Container)
-
-    $date_string = (Get-Date).ToString('R',[System.Globalization.CultureInfo]::InvariantCulture)
-
-    $headers = @{
-        'x-ms-date' = $date_string
-        'x-ms-version' = '2019-02-02'
-    }
-
-    $canonicalized_string = "GET`n`n`n`nx-ms-date:$date_string`nx-ms-version:2019-02-02`n/$($StorageAccountName)/$($Container)?comp=list"
-
-    [byte[]]$key = [Convert]::FromBase64String($StorageKey)
-    $hmac = New-Object System.Security.Cryptography.HMACSHA256 @(,$key)
-    [byte[]]$hmac_data = [System.Text.Encoding]::UTF8.GetBytes($canonicalized_string)
-    $signature = [Convert]::ToBase64String($hmac.ComputeHash($hmac_data))
-
-    $headers['Authorization'] = ('SharedKeyLite {0}:{1}' -f $StorageAccountName, $signature)
-
-    $result = Invoke-RestMethod -Uri $request_uri -Headers $headers -TimeoutSec 120
-
     $bom = ([char[]][byte[]]@(239,187,191)) -join ''
 
-    $xml = [xml]($result -replace "^$bom", '')
+    $return_obj = New-Object System.Collections.ArrayList
 
-    $return_obj = @()
+    $marker = ''
 
-    $xml.EnumerationResults.Blobs.Blob | %{
-        $blob_obj = New-Object PSObject
-        $blob_obj | Add-Member -Type NoteProperty -Name 'Name' -Value $_.Name
-        $blob_obj | Add-Member -Type NoteProperty -Name 'LastModified' -Value $_.Properties.'Last-Modified'
-        $return_obj += $blob_obj
-    }
+    Do {
+
+        $uri = ('https://{0}.blob.core.windows.net/{1}?restype=container&comp=list&maxresults=5000' -f $StorageAccountName, $Container)
+
+        If ($marker) {$uri += ('&marker={0}' -f $marker)}
+
+        $request_uri = New-Object System.Uri $uri
+
+        $date_string = (Get-Date).ToString('R',[System.Globalization.CultureInfo]::InvariantCulture)
+
+        $headers = @{
+            'x-ms-date' = $date_string
+            'x-ms-version' = '2019-02-02'
+        }
+
+        $canonicalized_string = "GET`n`n`n`nx-ms-date:$date_string`nx-ms-version:2019-02-02`n/$($StorageAccountName)/$($Container)?comp=list"
+
+        [byte[]]$key = [Convert]::FromBase64String($StorageKey)
+        $hmac = New-Object System.Security.Cryptography.HMACSHA256 @(,$key)
+        [byte[]]$hmac_data = [System.Text.Encoding]::UTF8.GetBytes($canonicalized_string)
+        $signature = [Convert]::ToBase64String($hmac.ComputeHash($hmac_data))
+
+        $headers['Authorization'] = ('SharedKeyLite {0}:{1}' -f $StorageAccountName, $signature)
+
+        $result = Invoke-RestMethod -Uri $request_uri -Headers $headers -TimeoutSec 120
+
+        $xml = [xml]($result -replace "^$bom", '')
+
+        ForEach ($blob in $xml.EnumerationResults.Blobs.Blob) {
+            $return_obj.Add(
+                [LogBlob]::new($blob.Name,$blob.Properties.'Last-Modified')
+            ) > $null
+        }
+
+        $marker = $xml.EnumerationResults.NextMarker
+
+        Write-Host "... found $($return_obj.Count) blobs"
+
+    } Until (!$marker)
+
+    $return_obj.Sort()
 
     Return $return_obj
 
@@ -115,6 +146,9 @@ Function New-NSGLogReport {
         .PARAMETER Name
         The name of the target virtual machine.
 
+        .PARAMETER BeforeDate
+        Only load logs before this date.
+
         .PARAMETER Last
         The number of previous, recent NSG logs to load. NSG logs are rotated hourly, on the hour.
 
@@ -134,6 +168,10 @@ Function New-NSGLogReport {
         .EXAMPLE
 
         Get-AzVM -ResourceGroupName contoso -Name vm1 | New-NSGLogReport -Last 2
+
+        .EXAMPLE
+
+        Get-AzVM -ResourceGroupName contoso -Name vm1 | New-NSGLogReport -Last 2 -BeforeDate '2020-03-29 18:00'
 
         .EXAMPLE
 
@@ -158,6 +196,10 @@ Function New-NSGLogReport {
         [Parameter(ValueFromPipeline=$true,Mandatory=$true,ParameterSetName='FromPipeline')]
         [Microsoft.Azure.Commands.Compute.Models.PSVirtualMachine]
         $InputObject,
+
+        [Parameter()]
+        [datetime]
+        $BeforeDate,
 
         [Parameter()]
         [int]
@@ -254,7 +296,12 @@ Function New-NSGLogReport {
             Return [datetime]"$($Matches[1])-$($Matches[2])-$($Matches[3]) $($Matches[4]):$($Matches[5])"
         }
     }
-    $all_blobs = $blobs | Select $nsg_log_timestamp_selection, LastModified, Name | Sort-Object LastModified -Descending
+    $all_blobs = $blobs | Select $nsg_log_timestamp_selection, LastModified, Name
+
+    If ($BeforeDate) {
+        $all_blobs = $all_blobs | ?{$_.LogTime -lt $BeforeDate}
+    }
+
     If ($Last) {
         $target_blobs = $all_blobs | Select -First $Last
     } Else {
@@ -454,6 +501,9 @@ Function New-AZFWLogReport {
         .PARAMETER StorageAccountName
         The storage account containing Azure Firewall logs.
 
+        .PARAMETER BeforeDate
+        Only load logs before this date.
+
         .PARAMETER Last
         The number of previous, recent NSG logs to load. NSG logs are rotated hourly, on the hour.
 
@@ -475,6 +525,10 @@ Function New-AZFWLogReport {
 
         .EXAMPLE
 
+        New-AZFWLogReport -StorageAccountName constosofwlogs -Last 2 -BeforeDate '2020-03-29 18:00'
+
+        .EXAMPLE
+
          New-AZFWLogReport -StorageAccountName constosofwlogs
 
         .EXAMPLE
@@ -488,6 +542,10 @@ Function New-AZFWLogReport {
         [Parameter(Mandatory=$true)]
         [string]
         $StorageAccountName,
+
+        [Parameter()]
+        [datetime]
+        $BeforeDate,
 
         [Parameter()]
         [int]
@@ -528,14 +586,19 @@ Function New-AZFWLogReport {
 
     Write-Output "Finding log blobs ..."
 
-    $all_blobs = Get-StorageAccountBlobsAPI -StorageAccountName $sa_obj.StorageAccountName -Container $LOG_CONTAINER_NAME -StorageKey $sa_key
+    $all_blobs = Get-StorageAccountBlobsAPI -StorageAccountName $sa_obj.StorageAccountName -Container $LOG_CONTAINER_NAME -StorageKey $sa_key | Select $blob_timestamp_selection, LastModified, Name
+
+    If ($BeforeDate) {
+        $all_blobs = $all_blobs | ?{$_.LogTime -lt $BeforeDate}
+    }
+
     If ($Last) {
-        $target_blobs = $all_blobs | Select $blob_timestamp_selection, LastModified, Name | Sort-Object LogTime -Descending | Select -First $Last
+        $target_blobs = $all_blobs | Select -First $Last
     } Else {
         If ($Console) {
-            $target_blobs = $all_blobs | Select $blob_timestamp_selection, LastModified, Name | Sort-Object LogTime -Descending | Out-ConsoleGridView -PassThru
+            $target_blobs = $all_blobs | Out-ConsoleGridView -PassThru
         } Else {
-            $target_blobs = $all_blobs | Select $blob_timestamp_selection, LastModified, Name | Sort-Object LogTime -Descending | Out-GridView -PassThru
+            $target_blobs = $all_blobs | Out-GridView -PassThru
         }        
     }
 
