@@ -457,6 +457,10 @@ Function Parse-AZFWLog {
                 Return
             }
 
+            # Protect null integer values from causing a syntax error
+            If (!$source_port) {$source_port = "''"}
+            If (!$destination_port) {$destination_port = "''"}
+
             $Output.applog_data += ("{{ time: '{0}', protocol: '{1}', source_ip: '{2}', source_port: {3}, destination_ip: '{4}', destination_port: {5}, url: '{6}', action: '{7}', rule_collection: '{8}', rule: '{9}' }},`n" -f `
                 $time, $protocol, $source_ip, $source_port, $destination_ip, $destination_port, $url, $action, $rule_collection, $rule
             )
@@ -497,6 +501,10 @@ Function Parse-AZFWLog {
                 Write-Warning "[AzureFirewallNetworkRule] Can not parse [$msg]"
                 Return
             }
+
+            # Protect null integer values from causing a syntax error
+            If (!$source_port) {$source_port = "''"}
+            If (!$destination_port) {$destination_port = "''"}
 
             $Output.netlog_data += ("{{ time: '{0}', protocol: '{1}', source_ip: '{2}', source_port: {3}, destination_ip: '{4}', destination_port: {5}, action: '{6}' }},`n" -f `
                 $time, $protocol, $source_ip, $source_port, $destination_ip, $destination_port, $action
