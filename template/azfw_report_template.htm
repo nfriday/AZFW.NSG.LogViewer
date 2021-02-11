@@ -1,7 +1,7 @@
 <html>
 
     <head>
-        <script src="https://unpkg.com/ag-grid-community@21.0.1/dist/ag-grid-community.min.js"></script>
+        <script src="https://unpkg.com/ag-grid-community@25.0.1/dist/ag-grid-community.min.js"></script>
         <style>
 
             .ag-theme-balham .class-allow {
@@ -72,13 +72,14 @@
             var applog_columns = [
                 {headerName: "Time", field: "time", width: 150, sortingOrder: [ 'desc', 'asc' ] },
                 {headerName: "Protocol", field: "protocol", width: 100},
-                {headerName: "Source IP", field: "source_ip", width: 150},
-                {headerName: "Source Port", field: "source_port", width: 110, filter: 'agNumberColumnFilter' },
-                {headerName: "Dest", field: "destination_ip", width: 350},
-                {headerName: "Dest Port", field: "destination_port", width: 110, filter: 'agNumberColumnFilter' },
-                {headerName: "Action", field: "action", width: 110},
+                {headerName: "Source IP", field: "source_ip", width: 120},
+                {headerName: "Source Port", field: "source_port", width: 100, filter: 'agNumberColumnFilter' },
+                {headerName: "Dest", field: "destination_ip", width: 300},
+                {headerName: "Dest Port", field: "destination_port", width: 100, filter: 'agNumberColumnFilter' },
+                {headerName: "Url", field: "url", width: 250},
+                {headerName: "Action", field: "action", width: 100},
                 {headerName: "Rule Collection", field: "rule_collection", width: 150 },
-                {headerName: "Rule", field: "rule", width: 200}
+                {headerName: "Rule", field: "rule", width: 180}
             ];
                 
             var applog_grid = {

@@ -400,6 +400,7 @@ Function Parse-AZFWLog {
                 $destination_port = $matches[5]
                 $action = $matches[6]
                 $rule_collection = $matches[7]
+                $url = $null
                 $rule = $matches[8]
             } ElseIf ($msg -match '^(\S+)\s+request from (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5}) to (\S+):(\d{1,5})\. Action: (\S+)\. No rule matched. Proceeding with default action$') {
                 $protocol = $matches[1]
@@ -409,7 +410,28 @@ Function Parse-AZFWLog {
                 $destination_port = $matches[5]
                 $action = $matches[6]
                 $rule_collection = $null
+                $url = $null
                 $rule = 'DEFAULT'
+            } ElseIf ($msg -match '^(\S+)\s+request from (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5}) to (\S+):(\d{1,5})\. Url: (\S+)\. Action: (\S+)\. No rule matched. Proceeding with default action$') {
+                $protocol = $matches[1]
+                $source_ip = $matches[2]
+                $source_port = $matches[3]
+                $destination_ip = $matches[4]
+                $destination_port = $matches[5]
+                $action = $matches[7]
+                $rule_collection = $null
+                $url = $matches[6]
+                $rule = 'DEFAULT'
+            } ElseIf ($msg -match '^(\S+)\s+request from (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5}) to (\S+):(\d{1,5})\. Url: (\S+)\. Action: (\S+)\. Rule collection: (\S+)\. Rule: ([^\.]+)$') {
+                $protocol = $matches[1]
+                $source_ip = $matches[2]
+                $source_port = $matches[3]
+                $destination_ip = $matches[4]
+                $destination_port = $matches[5]
+                $action = $matches[7]
+                $rule_collection = $matches[8]
+                $url = $matches[6]
+                $rule = $matches[9]
             } ElseIf ($msg -match '^(\S+)\s+request from (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5}) was denied\. Reason: (.+)$') {
                 $protocol = $matches[1]
                 $source_ip = $matches[2]
@@ -418,6 +440,7 @@ Function Parse-AZFWLog {
                 $destination_port = $null
                 $action = 'Deny'
                 $rule_collection = $null
+                $url = $null
                 $rule = "[$($matches[4])]"
             } ElseIf ($msg -match '^(\S+)\s+request from (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})\. Action: Deny\. Reason: (.+)$') {
                 $protocol = $matches[1]
@@ -427,14 +450,15 @@ Function Parse-AZFWLog {
                 $destination_port = $null
                 $action = 'Deny'
                 $rule_collection = $null
+                $url = $null
                 $rule = "[$($matches[4])]"
             } Else {
                 Write-Warning "[AzureFirewallApplicationRule] Can not parse [$msg]"
                 Return
             }
 
-            $Output.applog_data += ("{{ time: '{0}', protocol: '{1}', source_ip: '{2}', source_port: '{3}', destination_ip: '{4}', destination_port: '{5}', action: '{6}', rule_collection: '{7}', rule: '{8}' }},`n" -f `
-                $time, $protocol, $source_ip, $source_port, $destination_ip, $destination_port, $action, $rule_collection, $rule
+            $Output.applog_data += ("{{ time: '{0}', protocol: '{1}', source_ip: '{2}', source_port: {3}, destination_ip: '{4}', destination_port: {5}, url: '{6}', action: '{7}', rule_collection: '{8}', rule: '{9}' }},`n" -f `
+                $time, $protocol, $source_ip, $source_port, $destination_ip, $destination_port, $url, $action, $rule_collection, $rule
             )
 
         } ElseIf ($category -eq 'AzureFirewallNetworkRule') {
@@ -474,7 +498,7 @@ Function Parse-AZFWLog {
                 Return
             }
 
-            $Output.netlog_data += ("{{ time: '{0}', protocol: '{1}', source_ip: '{2}', source_port: '{3}', destination_ip: '{4}', destination_port: '{5}', action: '{6}' }},`n" -f `
+            $Output.netlog_data += ("{{ time: '{0}', protocol: '{1}', source_ip: '{2}', source_port: {3}, destination_ip: '{4}', destination_port: {5}, action: '{6}' }},`n" -f `
                 $time, $protocol, $source_ip, $source_port, $destination_ip, $destination_port, $action
             )
 
